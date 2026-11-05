@@ -51,5 +51,6 @@ Example:
 
 - Movement is server-authoritative without prediction.
 - Local movement may feel slightly delayed.
-- Touch controls (move) are implemented.
+- Touch controls (move & look) are implemented.
+- First-person camera with mouse look (desktop) and touch look (mobile).
 - No shooting yet.

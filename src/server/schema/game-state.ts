@@ -7,6 +7,9 @@ export class Player extends Schema {
 
   @type("number") inputX = 0;
   @type("number") inputZ = 0;
+
+  @type("number") yaw = 0;
+  @type("number") pitch = 0;
 }
 
 export class GameState extends Schema {

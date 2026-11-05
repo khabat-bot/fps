@@ -29,6 +29,9 @@ export class GameRoom extends Room<GameState> {
 
       player.inputX = clampAxis(typeof input.moveX === "number" ? input.moveX : 0);
       player.inputZ = clampAxis(typeof input.moveZ === "number" ? input.moveZ : 0);
+
+      if (typeof input.yaw === "number") player.yaw = input.yaw;
+      if (typeof input.pitch === "number") player.pitch = input.pitch;
     });
   }
 

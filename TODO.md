@@ -10,8 +10,8 @@
 - [ ] Add interpolation for remote players.
 - [ ] Add simulated lag test.
 - [x] Add touch joystick using nipplejs.
-- [ ] Add desktop pointer-lock mouse look.
-- [ ] Add shared input abstraction for touch and keyboard.
+- [x] Add desktop pointer-lock mouse look.
+- [x] Add shared input abstraction for touch and keyboard.
 
 ## Done
 
@@ -21,7 +21,7 @@
 
 - [ ] Local player movement has no prediction yet, so it may feel delayed.
 - [x] Touch controls (move joystick) added.
-- [ ] No mobile camera controls yet.
+- [x] Mobile camera controls (touch look) added.
 
 ## Decisions made
 

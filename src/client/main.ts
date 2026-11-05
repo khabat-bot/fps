@@ -81,6 +81,11 @@ let keyboardMoveZ = 0;
 let touchMoveX = 0;
 let touchMoveZ = 0;
 
+let yaw = 0;
+let pitch = 0;
+const mouseSensitivity = 0.002;
+const touchSensitivity = 0.005;
+
 function clampAxis(value: number): number {
   return Math.max(-1, Math.min(1, value));
 }
@@ -122,6 +127,48 @@ window.addEventListener("blur", () => {
   pressedKeys.clear();
   updateMoveVector();
 });
+
+// Desktop pointer lock
+document.addEventListener("click", () => {
+  if (!document.pointerLockElement) {
+    canvas.requestPointerLock();
+  }
+});
+
+document.addEventListener("mousemove", (event) => {
+  if (document.pointerLockElement === canvas) {
+    yaw -= event.movementX * mouseSensitivity;
+    pitch -= event.movementY * mouseSensitivity;
+    pitch = Math.max(-Math.PI / 2 + 0.01, Math.min(Math.PI / 2 - 0.01, pitch));
+  }
+});
+
+// Mobile touch look
+const lookZone = document.getElementById("look-zone");
+if (lookZone) {
+  let lastTouchX = 0;
+  let lastTouchY = 0;
+
+  lookZone.addEventListener("touchstart", (event) => {
+    if (event.touches.length > 0) {
+      lastTouchX = event.touches[0].clientX;
+      lastTouchY = event.touches[0].clientY;
+    }
+  });
+
+  lookZone.addEventListener("touchmove", (event) => {
+    if (event.touches.length > 0) {
+      const dx = event.touches[0].clientX - lastTouchX;
+      const dy = event.touches[0].clientY - lastTouchY;
+      yaw -= dx * touchSensitivity;
+      pitch -= dy * touchSensitivity;
+      pitch = Math.max(-Math.PI / 2 + 0.01, Math.min(Math.PI / 2 - 0.01, pitch));
+      lastTouchX = event.touches[0].clientX;
+      lastTouchY = event.touches[0].clientY;
+      event.preventDefault();
+    }
+  }, { passive: false });
+}
 
 function endpointFromLocation(): string {
   const protocol = window.location.protocol === "https:" ? "wss" : "ws";
@@ -177,7 +224,9 @@ async function connect(): Promise<void> {
     window.setInterval(() => {
       const input: InputMessage = {
         moveX: clampAxis(keyboardMoveX + touchMoveX),
-        moveZ: clampAxis(keyboardMoveZ + touchMoveZ)
+        moveZ: clampAxis(keyboardMoveZ + touchMoveZ),
+        yaw,
+        pitch
       };
 
       void room.send("input", input);
@@ -192,8 +241,11 @@ renderer.setAnimationLoop(() => {
   const localMesh = meshes.get(localSessionId);
 
   if (localMesh) {
-    camera.position.set(localMesh.position.x, 8, localMesh.position.z + 8);
-    camera.lookAt(localMesh.position);
+    localMesh.visible = false;
+    camera.position.set(localMesh.position.x, 1.6, localMesh.position.z);
+    camera.rotation.order = "YXZ";
+    camera.rotation.y = yaw;
+    camera.rotation.x = pitch;
   }
 
   renderer.render(scene, camera);
