@@ -108,12 +108,39 @@ const remotePlayers = new Map<string, RemotePlayerData>();
 
 let localSessionId = "";
 let audioCtx: AudioContext | null = null;
-let muzzleFlash: THREE.PointLight | null = null;
 let flashTimeout: ReturnType<typeof setTimeout> | null = null;
+let muzzleFlashMesh: THREE.Mesh | null = null;
 
-// Attach muzzle flash light to the camera
-muzzleFlash = new THREE.PointLight(0xffaa00, 0, 10);
-camera.add(muzzleFlash);
+// Build a simple weapon model attached to the camera
+const weaponGroup = new THREE.Group();
+
+// Gun body
+const gunBody = new THREE.Mesh(
+  new THREE.BoxGeometry(0.12, 0.15, 0.6),
+  new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.5 })
+);
+gunBody.position.set(0.25, -0.25, -0.4);
+weaponGroup.add(gunBody);
+
+// Gun barrel
+const gunBarrel = new THREE.Mesh(
+  new THREE.BoxGeometry(0.06, 0.06, 0.4),
+  new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.3 })
+);
+gunBarrel.position.set(0.25, -0.18, -0.75);
+weaponGroup.add(gunBarrel);
+
+// Muzzle flash mesh (initially hidden)
+muzzleFlashMesh = new THREE.Mesh(
+  new THREE.SphereGeometry(0.1, 8, 8),
+  new THREE.MeshBasicMaterial({ color: 0xffaa00, transparent: true, opacity: 0.9 })
+);
+muzzleFlashMesh.position.set(0.25, -0.18, -0.95);
+muzzleFlashMesh.visible = false;
+weaponGroup.add(muzzleFlashMesh);
+
+// Attach weapon to camera so it moves with the view
+camera.add(weaponGroup);
 
 window.addEventListener("resize", () => {
   camera.aspect = window.innerWidth / window.innerHeight;
@@ -180,12 +207,16 @@ function playHitSound() {
 }
 
 function triggerMuzzleFlash() {
-  if (!muzzleFlash) return;
-  muzzleFlash.intensity = 2;
+  if (!muzzleFlashMesh) return;
+  muzzleFlashMesh.visible = true;
+  // Randomize flash size slightly for variety
+  const scale = 0.8 + Math.random() * 0.6;
+  muzzleFlashMesh.scale.set(scale, scale, scale);
+  
   if (flashTimeout) clearTimeout(flashTimeout);
   flashTimeout = setTimeout(() => {
-    muzzleFlash!.intensity = 0;
-  }, 50);
+    if (muzzleFlashMesh) muzzleFlashMesh.visible = false;
+  }, 60);
 }
 
 function clampAxis(value: number): number {
@@ -444,6 +475,14 @@ renderer.setAnimationLoop(() => {
     camera.rotation.order = "YXZ";
     camera.rotation.y = yaw;
     camera.rotation.x = pitch;
+    
+    // Subtle weapon sway based on movement
+    if (weaponGroup) {
+      const isMoving = Math.abs(localMoveX) > 0.1 || Math.abs(localMoveZ) > 0.1;
+      const swayX = isMoving ? Math.sin(now * 0.015) * 0.02 : 0;
+      const swayY = isMoving ? Math.abs(Math.sin(now * 0.015)) * 0.02 : 0;
+      weaponGroup.position.set(swayX, swayY, 0);
+    }
   }
 
   // Interpolate remote players
