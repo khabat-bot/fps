@@ -88,12 +88,17 @@ const localMaterial = new THREE.MeshBasicMaterial({
   color: 0x22c55e
 });
 
-const remoteMaterial = new THREE.MeshBasicMaterial({
-  color: 0xef4444
+const remoteMaterial = new THREE.MeshStandardMaterial({
+  color: 0xef4444,
+  roughness: 0.6,
+  metalness: 0.2,
+  emissive: 0x330000,
 });
 
 interface RemotePlayerData {
   mesh: THREE.Mesh;
+  healthBar: THREE.Mesh;
+  healthBarBg: THREE.Mesh;
   targetX: number;
   targetZ: number;
   currentX: number;
@@ -343,8 +348,26 @@ function syncState(state: GameStateView): void {
         sessionId === localSessionId ? localMaterial : remoteMaterial
       );
       scene.add(mesh);
+      
+      // Health bar (green fill on dark background)
+      const healthBarBg = new THREE.Mesh(
+        new THREE.PlaneGeometry(1.2, 0.15),
+        new THREE.MeshBasicMaterial({ color: 0x1f2937, side: THREE.DoubleSide })
+      );
+      healthBarBg.position.set(player.x, 2.2, player.z);
+      scene.add(healthBarBg);
+      
+      const healthBar = new THREE.Mesh(
+        new THREE.PlaneGeometry(1.1, 0.1),
+        new THREE.MeshBasicMaterial({ color: 0x22c55e, side: THREE.DoubleSide })
+      );
+      healthBar.position.set(player.x, 2.2, player.z + 0.01);
+      scene.add(healthBar);
+      
       data = {
         mesh,
+        healthBar,
+        healthBarBg,
         targetX: player.x,
         targetZ: player.z,
         currentX: player.x,
@@ -360,6 +383,18 @@ function syncState(state: GameStateView): void {
       data.targetZ = player.z;
       data.targetYaw = player.yaw || 0;
       data.targetPitch = player.pitch || 0;
+      
+      // Update health bar fill based on current health
+      const health = player.health !== undefined ? player.health : 100;
+      const healthPct = Math.max(0, Math.min(100, health)) / 100;
+      data.healthBar.scale.x = healthPct;
+      data.healthBar.position.x = data.targetX - (1.1 * (1 - healthPct)) / 2;
+      
+      // Color changes as health drops
+      const mat = data.healthBar.material as THREE.MeshBasicMaterial;
+      if (healthPct > 0.5) mat.color.setHex(0x22c55e);
+      else if (healthPct > 0.25) mat.color.setHex(0xeab308);
+      else mat.color.setHex(0xef4444);
     }
 
     // Update local scoreboard if it's the local player
@@ -373,6 +408,8 @@ function syncState(state: GameStateView): void {
   for (const [sessionId, data] of remotePlayers) {
     if (!seen.has(sessionId)) {
       scene.remove(data.mesh);
+      scene.remove(data.healthBar);
+      scene.remove(data.healthBarBg);
       remotePlayers.delete(sessionId);
     }
   }
@@ -500,6 +537,12 @@ renderer.setAnimationLoop(() => {
     data.mesh.rotation.y = data.currentYaw;
     data.mesh.rotation.x = data.currentPitch;
     data.mesh.visible = true;
+    
+    // Health bar follows the player and faces the camera
+    data.healthBarBg.position.set(data.currentX, 2.2, data.currentZ);
+    data.healthBarBg.lookAt(camera.position);
+    data.healthBar.position.set(data.currentX, 2.2, data.currentZ);
+    data.healthBar.lookAt(camera.position);
   });
 
   renderer.render(scene, camera);

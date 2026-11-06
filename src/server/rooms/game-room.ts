@@ -38,27 +38,48 @@ export class GameRoom extends Room<GameState> {
         const now = Date.now();
         if (now - player.lastFireTime > 150) {
           player.lastFireTime = now;
+          
+          // Build a 3D forward vector from yaw and pitch
           const forwardX = -Math.sin(player.yaw) * Math.cos(player.pitch);
+          const forwardY = Math.sin(player.pitch);
           const forwardZ = -Math.cos(player.yaw) * Math.cos(player.pitch);
+          
+          // Shooter eye position
+          const eyeY = 1.6;
           
           this.state.players.forEach((target: Player, targetId: string) => {
             if (targetId === client.sessionId) return;
-            const dx = target.x - player.x;
-            const dz = target.z - player.z;
-            const dist = Math.sqrt(dx * dx + dz * dz);
-            if (dist < 20) {
-              const dirX = dx / dist;
-              const dirZ = dz / dist;
-              const dot = forwardX * dirX + forwardZ * dirZ;
-              if (dot > 0.95) {
-                target.health -= 34;
-                if (target.health <= 0) {
-                  target.deaths += 1;
-                  player.kills += 1;
-                  target.health = 100;
-                  target.x = Math.random() * 6 - 3;
-                  target.z = Math.random() * 6 - 3;
-                }
+            
+            // Vector from shooter eye to target center (target cube is at y=0.5, half-height)
+            const toTargetX = target.x - player.x;
+            const toTargetY = 0.5 - eyeY;
+            const toTargetZ = target.z - player.z;
+            
+            // Project onto forward direction to get distance along the ray
+            const t = toTargetX * forwardX + toTargetY * forwardY + toTargetZ * forwardZ;
+            if (t < 0 || t > 50) return; // behind us or too far
+            
+            // Closest point on ray to target
+            const closestX = player.x + forwardX * t;
+            const closestY = eyeY + forwardY * t;
+            const closestZ = player.z + forwardZ * t;
+            
+            // Distance from target center to that closest point
+            const dx = target.x - closestX;
+            const dy = 0.5 - closestY;
+            const dz = target.z - closestZ;
+            const perpDist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+            
+            // Hitbox radius matches the 1x1x1 cube visual (half-extent ~0.7 for forgiveness)
+            const HITBOX_RADIUS = 0.7;
+            if (perpDist < HITBOX_RADIUS) {
+              target.health -= 34;
+              if (target.health <= 0) {
+                target.deaths += 1;
+                player.kills += 1;
+                target.health = 100;
+                target.x = Math.random() * 6 - 3;
+                target.z = Math.random() * 6 - 3;
               }
             }
           });
