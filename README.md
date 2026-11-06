@@ -39,7 +39,11 @@ Example:
 
 ## Test
 
-1. Open the page in two browser tabs.
+1. Open the page in a browser tab.
+2. Enter a room code (e.g., "ABC123") or leave it blank for a random code.
+3. Click "JOIN / CREATE".
+4. Open a second browser tab (or your phone) and enter the *exact same room code*.
+5. You should now see each other's cubes and can shoot each other!
 2. Press WASD or arrow keys in one tab.
 3. The other tab should see the cube move.
 4. Open the page on your phone.

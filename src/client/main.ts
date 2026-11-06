@@ -272,14 +272,15 @@ function syncState(state: GameStateView): void {
   }
 }
 
-async function connect(): Promise<void> {
+async function connect(roomCode: string): Promise<void> {
   const endpoint = endpointFromLocation();
-
-  setStatus(`Connecting to ${endpoint}...`);
+  setStatus(`Connecting to room ${roomCode}...`);
 
   try {
     const client = new Client(endpoint);
-    const room = await client.joinOrCreate<GameStateView>("game");
+    
+    // filterBy on the server ensures players with the same roomCode are grouped together
+    const room = await client.joinOrCreate<GameStateView>("game", { roomCode: roomCode });
 
     localSessionId = room.sessionId;
 
@@ -434,4 +435,40 @@ document.addEventListener("mouseup", (event) => {
   }
 });
 
-void connect();
+const lobbyOverlay = document.getElementById("lobby-overlay");
+const roomCodeInput = document.getElementById("room-code-input") as HTMLInputElement;
+const joinBtn = document.getElementById("join-btn") as HTMLButtonElement;
+const lobbyError = document.getElementById("lobby-error");
+
+function generateRoomCode(): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let code = "";
+  for (let i = 0; i < 6; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+}
+
+joinBtn?.addEventListener("click", async () => {
+  let code = roomCodeInput.value.trim().toUpperCase();
+  if (!code) {
+    code = generateRoomCode();
+    roomCodeInput.value = code;
+  }
+  
+  joinBtn.textContent = "Connecting...";
+  joinBtn.disabled = true;
+  if (lobbyError) lobbyError.textContent = "";
+
+  try {
+    await connect(code);
+    if (lobbyOverlay) {
+      lobbyOverlay.style.display = "none";
+    }
+    setStatus(`Room: ${code} | Use WASD or arrow keys.`);
+  } catch (error) {
+    joinBtn.textContent = "JOIN / CREATE";
+    joinBtn.disabled = false;
+    if (lobbyError) lobbyError.textContent = error instanceof Error ? error.message : "Failed to join room";
+  }
+});

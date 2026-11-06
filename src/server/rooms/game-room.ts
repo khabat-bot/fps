@@ -14,7 +14,7 @@ function clampAxis(value: number): number {
 }
 
 export class GameRoom extends Room<GameState> {
-  onCreate() {
+  onCreate(options: any) {
     this.maxClients = MAX_PLAYERS;
     this.setState(new GameState());
 

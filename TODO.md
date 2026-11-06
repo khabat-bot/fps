@@ -8,7 +8,7 @@
 
 - [x] Shooting with server-side hit detection (3 shots to kill, 150ms cooldown)
 - [x] Health, death, respawn, scoreboard (K/D tracking, death overlay)
-- [ ] Rooms with join codes (2–8 players)
+- [x] Rooms with join codes (2–8 players)
 - [ ] Real map, low-poly models, sound, game feel
 - [ ] Performance pass on real phone, deployment instructions
 
@@ -26,7 +26,7 @@
 
 - [x] Shooting implemented with hit flash feedback
 - [x] Health/death/respawn implemented with visual feedback
-- [ ] No room codes - everyone joins same room
+- [x] Room codes implemented for private matches
 
 ## Decisions made
 

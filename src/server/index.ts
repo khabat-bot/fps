@@ -9,7 +9,7 @@ const { Server } = Colyseus;
 async function main() {
   const server = new Server();
 
-  server.define("game", GameRoom);
+  server.define("game", GameRoom).filterBy(["roomCode"]);
 
   await server.listen(SERVER_PORT);
 
