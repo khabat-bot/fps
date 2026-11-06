@@ -45,14 +45,14 @@ export class GameRoom extends Room<GameState> {
           const forwardZ = -Math.cos(player.yaw) * Math.cos(player.pitch);
           
           // Shooter eye position
-          const eyeY = 1.6;
+          const eyeY = 1.5;
           
           this.state.players.forEach((target: Player, targetId: string) => {
             if (targetId === client.sessionId) return;
             
             // Vector from shooter eye to target center (target cube is at y=0.5, half-height)
             const toTargetX = target.x - player.x;
-            const toTargetY = 0.5 - eyeY;
+            const toTargetY = 0.8 - eyeY;
             const toTargetZ = target.z - player.z;
             
             // Project onto forward direction to get distance along the ray
@@ -66,12 +66,12 @@ export class GameRoom extends Room<GameState> {
             
             // Distance from target center to that closest point
             const dx = target.x - closestX;
-            const dy = 0.5 - closestY;
+            const dy = 0.8 - closestY;
             const dz = target.z - closestZ;
             const perpDist = Math.sqrt(dx * dx + dy * dy + dz * dz);
             
             // Hitbox radius matches the 1x1x1 cube visual (half-extent ~0.7 for forgiveness)
-            const HITBOX_RADIUS = 0.7;
+            const HITBOX_RADIUS = 0.6;
             if (perpDist < HITBOX_RADIUS) {
               target.health -= 34;
               if (target.health <= 0) {

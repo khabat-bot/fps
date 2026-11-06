@@ -82,7 +82,8 @@ OBSTACLES.forEach(([x, z, w, d]) => {
 // Ensure camera is in scene so its child light renders
 scene.add(camera);
 
-const cubeGeometry = new THREE.BoxGeometry(1, 1, 1);
+// Bean-shaped player: capsule (cylinder with sphere caps)
+const playerGeometry = new THREE.CapsuleGeometry(0.4, 0.8, 4, 8);
 
 const localMaterial = new THREE.MeshBasicMaterial({
   color: 0x22c55e
@@ -344,22 +345,41 @@ function syncState(state: GameStateView): void {
 
     if (!data) {
       const mesh = new THREE.Mesh(
-        cubeGeometry,
+        playerGeometry,
         sessionId === localSessionId ? localMaterial : remoteMaterial
       );
       scene.add(mesh);
       
+      // Skip health bar for local player (we'll show it in HUD instead)
+      if (sessionId === localSessionId) {
+        data = {
+          mesh,
+          healthBar: null as any,
+          healthBarBg: null as any,
+          targetX: player.x,
+          targetZ: player.z,
+          currentX: player.x,
+          currentZ: player.z,
+          targetYaw: player.yaw || 0,
+          targetPitch: player.pitch || 0,
+          currentYaw: player.yaw || 0,
+          currentPitch: player.pitch || 0,
+        };
+        remotePlayers.set(sessionId, data);
+        return;
+      }
+      
       // Health bar (green fill on dark background)
       const healthBarBg = new THREE.Mesh(
         new THREE.PlaneGeometry(1.2, 0.15),
-        new THREE.MeshBasicMaterial({ color: 0x1f2937, side: THREE.DoubleSide })
+        new THREE.MeshBasicMaterial({ color: 0x1f2937, side: THREE.DoubleSide, depthTest: false })
       );
       healthBarBg.position.set(player.x, 2.2, player.z);
       scene.add(healthBarBg);
       
       const healthBar = new THREE.Mesh(
         new THREE.PlaneGeometry(1.1, 0.1),
-        new THREE.MeshBasicMaterial({ color: 0x22c55e, side: THREE.DoubleSide })
+        new THREE.MeshBasicMaterial({ color: 0x22c55e, side: THREE.DoubleSide, depthTest: false })
       );
       healthBar.position.set(player.x, 2.2, player.z + 0.01);
       scene.add(healthBar);
@@ -384,32 +404,45 @@ function syncState(state: GameStateView): void {
       data.targetYaw = player.yaw || 0;
       data.targetPitch = player.pitch || 0;
       
-      // Update health bar fill based on current health
-      const health = player.health !== undefined ? player.health : 100;
-      const healthPct = Math.max(0, Math.min(100, health)) / 100;
-      data.healthBar.scale.x = healthPct;
-      data.healthBar.position.x = data.targetX - (1.1 * (1 - healthPct)) / 2;
-      
-      // Color changes as health drops
-      const mat = data.healthBar.material as THREE.MeshBasicMaterial;
-      if (healthPct > 0.5) mat.color.setHex(0x22c55e);
-      else if (healthPct > 0.25) mat.color.setHex(0xeab308);
-      else mat.color.setHex(0xef4444);
+      // Update health bar fill based on current health (skip for local player)
+      if (data.healthBar && data.healthBar.material) {
+        const health = player.health !== undefined ? player.health : 100;
+        const healthPct = Math.max(0, Math.min(100, health)) / 100;
+        data.healthBar.scale.x = healthPct;
+        data.healthBar.position.x = data.targetX - (1.1 * (1 - healthPct)) / 2;
+        
+        // Color changes as health drops
+        const mat = data.healthBar.material as THREE.MeshBasicMaterial;
+        if (healthPct > 0.5) mat.color.setHex(0x22c55e);
+        else if (healthPct > 0.25) mat.color.setHex(0xeab308);
+        else mat.color.setHex(0xef4444);
+      }
     }
 
-    // Update local scoreboard if it's the local player
-    if (sessionId === localSessionId && scoreboardEl) {
+    // Update local scoreboard and health HUD if it's the local player
+    if (sessionId === localSessionId) {
       const k = player.kills !== undefined ? player.kills : 0;
       const d = player.deaths !== undefined ? player.deaths : 0;
-      scoreboardEl.textContent = `K: ${k} | D: ${d}`;
+      if (scoreboardEl) scoreboardEl.textContent = `K: ${k} | D: ${d}`;
+      
+      // Update health HUD
+      const health = player.health !== undefined ? player.health : 100;
+      const healthHud = document.getElementById("health-hud");
+      if (healthHud) {
+        healthHud.textContent = `HP: ${Math.max(0, Math.round(health))}`;
+        const pct = Math.max(0, Math.min(100, health)) / 100;
+        if (pct > 0.5) healthHud.style.color = "#22c55e";
+        else if (pct > 0.25) healthHud.style.color = "#eab308";
+        else healthHud.style.color = "#ef4444";
+      }
     }
   });
 
   for (const [sessionId, data] of remotePlayers) {
     if (!seen.has(sessionId)) {
       scene.remove(data.mesh);
-      scene.remove(data.healthBar);
-      scene.remove(data.healthBarBg);
+      if (data.healthBar) scene.remove(data.healthBar);
+      if (data.healthBarBg) scene.remove(data.healthBarBg);
       remotePlayers.delete(sessionId);
     }
   }
@@ -508,7 +541,7 @@ renderer.setAnimationLoop(() => {
   const localData = remotePlayers.get(localSessionId);
   if (localData) {
     localData.mesh.visible = false;
-    camera.position.set(predictedX, 1.6, predictedZ);
+    camera.position.set(predictedX, 1.5, predictedZ);
     camera.rotation.order = "YXZ";
     camera.rotation.y = yaw;
     camera.rotation.x = pitch;
@@ -532,17 +565,19 @@ renderer.setAnimationLoop(() => {
     data.currentYaw += (data.targetYaw - data.currentYaw) * interpSpeed * dt;
     data.currentPitch += (data.targetPitch - data.currentPitch) * interpSpeed * dt;
 
-    data.mesh.position.set(data.currentX, 0.5, data.currentZ);
+    data.mesh.position.set(data.currentX, 0.8, data.currentZ);
     data.mesh.rotation.order = "YXZ";
     data.mesh.rotation.y = data.currentYaw;
     data.mesh.rotation.x = data.currentPitch;
     data.mesh.visible = true;
     
-    // Health bar follows the player and faces the camera
-    data.healthBarBg.position.set(data.currentX, 2.2, data.currentZ);
-    data.healthBarBg.lookAt(camera.position);
-    data.healthBar.position.set(data.currentX, 2.2, data.currentZ);
-    data.healthBar.lookAt(camera.position);
+    // Health bar follows the player and faces the camera (skip for local player)
+    if (data.healthBarBg && data.healthBar) {
+      data.healthBarBg.position.set(data.currentX, 2.2, data.currentZ);
+      data.healthBarBg.lookAt(camera.position);
+      data.healthBar.position.set(data.currentX, 2.2, data.currentZ);
+      data.healthBar.lookAt(camera.position);
+    }
   });
 
   renderer.render(scene, camera);
