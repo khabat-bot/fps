@@ -91,6 +91,47 @@
         transition: opacity 0.1s;
         z-index: 40;
       }
+      #scoreboard {
+        position: fixed;
+        top: 8px;
+        right: 8px;
+        z-index: 30;
+        color: #e5e7eb;
+        font-family: monospace;
+        font-size: 14px;
+        background: rgba(0, 0, 0, 0.5);
+        padding: 8px 12px;
+        border-radius: 4px;
+        pointer-events: none;
+      }
+      #death-overlay {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(100, 0, 0, 0.6);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 50;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.3s;
+      }
+      #death-overlay.active {
+        opacity: 1;
+      }
+      #death-overlay h1 {
+        color: white;
+        font-size: 48px;
+        margin: 0 0 16px 0;
+        text-transform: uppercase;
+        letter-spacing: 4px;
+      }
+      #death-overlay p {
+        color: #fca5a5;
+        font-size: 18px;
+        font-family: monospace;
+      }
       #status {
         position: fixed;
         left: 8px;
@@ -108,6 +149,8 @@
   </head>
   <body>
     <div id="hit-flash"></div>
+    <div id="death-overlay"><h1>You Died</h1><p>Respawning...</p></div>
+    <div id="scoreboard">K: 0 | D: 0</div>
     <div id="crosshair"></div>
     <div id="status">Starting…</div>
     <div id="fire-btn">FIRE</div>

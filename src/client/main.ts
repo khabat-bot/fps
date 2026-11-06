@@ -12,6 +12,8 @@ interface PlayerView {
   yaw: number;
   pitch: number;
   health: number;
+  kills: number;
+  deaths: number;
 }
 
 interface GameStateView {
@@ -20,6 +22,9 @@ interface GameStateView {
 
 const canvas = document.getElementById("game");
 const statusEl = document.getElementById("status");
+const scoreboardEl = document.getElementById("scoreboard");
+const deathOverlayEl = document.getElementById("death-overlay");
+let isDead = false;
 
 if (!(canvas instanceof HTMLCanvasElement)) {
   throw new Error("Canvas element missing");
@@ -250,6 +255,13 @@ function syncState(state: GameStateView): void {
       data.targetYaw = player.yaw || 0;
       data.targetPitch = player.pitch || 0;
     }
+
+    // Update local scoreboard if it's the local player
+    if (sessionId === localSessionId && scoreboardEl) {
+      const k = player.kills !== undefined ? player.kills : 0;
+      const d = player.deaths !== undefined ? player.deaths : 0;
+      scoreboardEl.textContent = `K: ${k} | D: ${d}`;
+    }
   });
 
   for (const [sessionId, data] of remotePlayers) {
@@ -288,6 +300,15 @@ async function connect(): Promise<void> {
               setTimeout(() => { flash.style.opacity = "0"; }, 100);
             }
           }
+          
+          if (localPlayer.health <= 0 && !isDead) {
+            isDead = true;
+            if (deathOverlayEl) deathOverlayEl.classList.add("active");
+          } else if (localPlayer.health > 0 && isDead) {
+            isDead = false;
+            if (deathOverlayEl) deathOverlayEl.classList.remove("active");
+          }
+          
           lastHealth = localPlayer.health;
 
           const dx = localPlayer.x - predictedX;

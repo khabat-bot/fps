@@ -53,6 +53,8 @@ export class GameRoom extends Room<GameState> {
               if (dot > 0.95) {
                 target.health -= 34;
                 if (target.health <= 0) {
+                  target.deaths += 1;
+                  player.kills += 1;
                   target.health = 100;
                   target.x = Math.random() * 6 - 3;
                   target.z = Math.random() * 6 - 3;

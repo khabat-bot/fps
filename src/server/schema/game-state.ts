@@ -13,6 +13,9 @@ export class Player extends Schema {
 
   @type("number") health = 100;
   @type("number") lastFireTime = 0;
+
+  @type("number") kills = 0;
+  @type("number") deaths = 0;
 }
 
 export class GameState extends Schema {
