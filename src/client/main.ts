@@ -568,7 +568,7 @@ renderer.setAnimationLoop(() => {
     data.mesh.position.set(data.currentX, 0.8, data.currentZ);
     data.mesh.rotation.order = "YXZ";
     data.mesh.rotation.y = data.currentYaw;
-    data.mesh.rotation.x = data.currentPitch;
+    // Removed rotation.x (pitch) so remote beans don't lean forward/backward
     data.mesh.visible = true;
     
     // Health bar follows the player and faces the camera (skip for local player)

@@ -71,7 +71,7 @@ export class GameRoom extends Room<GameState> {
             const perpDist = Math.sqrt(dx * dx + dy * dy + dz * dz);
             
             // Hitbox radius matches the 1x1x1 cube visual (half-extent ~0.7 for forgiveness)
-            const HITBOX_RADIUS = 0.6;
+            const HITBOX_RADIUS = 0.8;
             if (perpDist < HITBOX_RADIUS) {
               target.health -= 34;
               if (target.health <= 0) {

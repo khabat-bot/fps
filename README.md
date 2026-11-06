@@ -1,60 +1,44 @@
-# Web Multiplayer FPS — Step 1
+# Web Multiplayer FPS
 
-This is the first playable scaffold.
+A real-time multiplayer first-person shooter built with Colyseus, Three.js, and TypeScript. Runs in any modern browser on desktop and mobile (iOS Safari supported).
 
-Current state:
-- Vite client
-- Three.js renderer
-- Colyseus multiplayer server
-- Two or more browser tabs can connect
-- Each client appears as a cube
-- Desktop movement: WASD or arrow keys
-- Mobile movement: Left-side virtual joystick
-- Touch controls are not implemented yet
+## Features
 
-## Run
+- Cross-platform controls (desktop WASD + mouse, mobile joystick + touch)
+- Server-authoritative shooting with ray-vs-sphere hit detection
+- Private rooms with join codes (Colyseus filterBy)
+- Client-side prediction + interpolation for smooth movement
+- Bean-shaped players with floating health bars
+- Low-poly weapon model with muzzle flash
+- Synthesized sound effects (Web Audio API)
+- Map with obstacles and server-side collision
+- Scoreboard (K/D tracking) and health HUD
+- iOS Safari audio unlock support
 
-    npm install
-    npm run dev
+## Quick Start
 
-## Open on desktop
+npm install
+npm run dev
 
-    http://localhost:5173
+Open http://localhost:5173 in two browser tabs or your phone.
 
-## Open on phone
+## How to Play
 
-Your phone must be on the same Wi-Fi network as the computer running the dev server.
+1. Enter a room code (or leave blank for random)
+2. Click "JOIN / CREATE"
+3. Share the code with friends
+4. Shoot the beans!
 
-Find your computer IP:
+### Controls
 
-    hostname -I
+Desktop: WASD + mouse look + left click to shoot
+Mobile: Left joystick + right drag + FIRE button
 
-Then open:
+## Tech Stack
 
-    http://YOUR_COMPUTER_IP:5173
+- Server: Colyseus (Node.js)
+- Client: Three.js + Vite
+- Language: TypeScript (strict mode)
+- Audio: Web Audio API (synthesized)
 
-Example:
-
-    http://192.168.1.20:5173
-
-## Test
-
-1. Open the page in a browser tab.
-2. Enter a room code (e.g., "ABC123") or leave it blank for a random code.
-3. Click "JOIN / CREATE".
-4. Open a second browser tab (or your phone) and enter the *exact same room code*.
-5. You should now see each other's cubes and can shoot each other!
-2. Press WASD or arrow keys in one tab.
-3. The other tab should see the cube move.
-4. Open the page on your phone.
-5. Move a cube on desktop.
-6. The phone should see the movement.
-7. On your phone, use the left-side joystick to move the cube.
-
-## Known limitations
-
-- Movement is server-authoritative without prediction.
-- Local movement may feel slightly delayed.
-- Touch controls (move & look) are implemented.
-- First-person camera with mouse look (desktop) and touch look (mobile).
-- No shooting yet.
+See PROJECT_STRUCTURE.md for detailed codebase breakdown.
