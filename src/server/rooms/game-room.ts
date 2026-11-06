@@ -2,6 +2,7 @@ import { createRequire } from "node:module";
 import type { Client } from "colyseus";
 import { GameState, Player } from "../schema/game-state.js";
 import { TICK_RATE, MOVE_SPEED, MAX_PLAYERS } from "../../shared/constants.js";
+import { applyMovement } from "../../shared/movement.js";
 import type { InputMessage } from "../../shared/types.js";
 
 const require = createRequire(import.meta.url);
@@ -56,8 +57,9 @@ export class GameRoom extends Room<GameState> {
     const dt = deltaTime / 1000;
 
     this.state.players.forEach((player: Player) => {
-      player.x += player.inputX * MOVE_SPEED * dt;
-      player.z += player.inputZ * MOVE_SPEED * dt;
+      const next = applyMovement(player.x, player.z, player.inputX, player.inputZ, dt);
+      player.x = next.x;
+      player.z = next.z;
     });
   }
 }

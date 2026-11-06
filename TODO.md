@@ -6,7 +6,7 @@
 
 ## Next
 
-- [ ] Add client-side prediction and server reconciliation.
+- [x] Add client-side prediction and server reconciliation.
 - [ ] Add interpolation for remote players.
 - [ ] Add simulated lag test.
 - [x] Add touch joystick using nipplejs.
@@ -19,7 +19,7 @@
 
 ## Known issues / bugs
 
-- [ ] Local player movement has no prediction yet, so it may feel delayed.
+- [x] Local player movement uses client-side prediction (instant response).
 - [x] Touch controls (move joystick) added.
 - [x] Mobile camera controls (touch look) added.
 

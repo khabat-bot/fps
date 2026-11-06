@@ -3,6 +3,7 @@ import nipplejs from "nipplejs";
 import * as THREE from "three";
 import { SERVER_PORT } from "../shared/constants.js";
 import type { InputMessage } from "../shared/types.js";
+import { applyMovement } from "../shared/movement.js";
 
 interface PlayerView {
   x: number;
@@ -80,6 +81,10 @@ let keyboardMoveX = 0;
 let keyboardMoveZ = 0;
 let touchMoveX = 0;
 let touchMoveZ = 0;
+
+let predictedX = 0;
+let predictedZ = 0;
+let lastTime = performance.now();
 
 let yaw = 0;
 let pitch = 0;
@@ -239,6 +244,12 @@ async function connect(): Promise<void> {
     room.onStateChange((state) => {
       if (state) {
         syncState(state);
+        // Reconciliation: snap predicted position to server authority
+        const localPlayer = state.players.get(localSessionId);
+        if (localPlayer) {
+          predictedX = localPlayer.x;
+          predictedZ = localPlayer.z;
+        }
       }
     });
 
@@ -265,11 +276,28 @@ async function connect(): Promise<void> {
 }
 
 renderer.setAnimationLoop(() => {
+  const now = performance.now();
+  const dt = Math.min((now - lastTime) / 1000, 0.1); // Cap dt to prevent huge jumps
+  lastTime = now;
+
+  // Predict local movement
+  const localMoveX = clampAxis(keyboardMoveX + touchMoveX);
+  const localMoveZ = clampAxis(keyboardMoveZ + touchMoveZ);
+  const cosYaw = Math.cos(yaw);
+  const sinYaw = Math.sin(yaw);
+  const worldMoveX = localMoveX * cosYaw - localMoveZ * sinYaw;
+  const worldMoveZ = -localMoveX * sinYaw - localMoveZ * cosYaw;
+
+  const next = applyMovement(predictedX, predictedZ, worldMoveX, worldMoveZ, dt);
+  predictedX = next.x;
+  predictedZ = next.z;
+
   const localMesh = meshes.get(localSessionId);
 
   if (localMesh) {
     localMesh.visible = false;
-    camera.position.set(localMesh.position.x, 1.6, localMesh.position.z);
+    // Use predicted position for camera!
+    camera.position.set(predictedX, 1.6, predictedZ);
     camera.rotation.order = "YXZ";
     camera.rotation.y = yaw;
     camera.rotation.x = pitch;
