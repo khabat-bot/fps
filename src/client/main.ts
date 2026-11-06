@@ -244,11 +244,17 @@ async function connect(): Promise<void> {
     room.onStateChange((state) => {
       if (state) {
         syncState(state);
-        // Reconciliation: snap predicted position to server authority
+        // Reconciliation: only correct large drift to prevent jitter.
+        // The server state is slightly in the past due to network transit,
+        // so snapping to it every tick teleports the camera backwards.
         const localPlayer = state.players.get(localSessionId);
         if (localPlayer) {
-          predictedX = localPlayer.x;
-          predictedZ = localPlayer.z;
+          const dx = localPlayer.x - predictedX;
+          const dz = localPlayer.z - predictedZ;
+          if (dx * dx + dz * dz > 4.0) { // Only snap if drifted > 2 units
+            predictedX = localPlayer.x;
+            predictedZ = localPlayer.z;
+          }
         }
       }
     });
