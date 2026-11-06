@@ -3,4 +3,5 @@ export interface InputMessage {
   moveZ: number;
   yaw: number;
   pitch: number;
+  fire: boolean;
 }

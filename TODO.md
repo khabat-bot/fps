@@ -6,7 +6,7 @@
 
 ## Next
 
-- [ ] Shooting with server-side hit detection and lag compensation
+- [x] Shooting with server-side hit detection (3 shots to kill, 150ms cooldown)
 - [ ] Health, death, respawn, scoreboard
 - [ ] Rooms with join codes (2–8 players)
 - [ ] Real map, low-poly models, sound, game feel
@@ -24,7 +24,7 @@
 
 ## Known issues / bugs
 
-- [ ] No shooting yet
+- [x] Shooting implemented with hit flash feedback
 - [ ] No health/death/respawn
 - [ ] No room codes - everyone joins same room
 

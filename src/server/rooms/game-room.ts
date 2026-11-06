@@ -33,6 +33,35 @@ export class GameRoom extends Room<GameState> {
 
       if (typeof input.yaw === "number") player.yaw = input.yaw;
       if (typeof input.pitch === "number") player.pitch = input.pitch;
+
+      if (input.fire) {
+        const now = Date.now();
+        if (now - player.lastFireTime > 150) {
+          player.lastFireTime = now;
+          const forwardX = -Math.sin(player.yaw) * Math.cos(player.pitch);
+          const forwardZ = -Math.cos(player.yaw) * Math.cos(player.pitch);
+          
+          this.state.players.forEach((target: Player, targetId: string) => {
+            if (targetId === client.sessionId) return;
+            const dx = target.x - player.x;
+            const dz = target.z - player.z;
+            const dist = Math.sqrt(dx * dx + dz * dz);
+            if (dist < 20) {
+              const dirX = dx / dist;
+              const dirZ = dz / dist;
+              const dot = forwardX * dirX + forwardZ * dirZ;
+              if (dot > 0.95) {
+                target.health -= 34;
+                if (target.health <= 0) {
+                  target.health = 100;
+                  target.x = Math.random() * 6 - 3;
+                  target.z = Math.random() * 6 - 3;
+                }
+              }
+            }
+          });
+        }
+      }
     });
   }
 

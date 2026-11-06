@@ -11,6 +11,7 @@ interface PlayerView {
   z: number;
   yaw: number;
   pitch: number;
+  health: number;
 }
 
 interface GameStateView {
@@ -99,9 +100,11 @@ let touchMoveZ = 0;
 let predictedX = 0;
 let predictedZ = 0;
 let lastTime = performance.now();
+let lastHealth = 100;
 
 let yaw = 0;
 let pitch = 0;
+let isFiring = false;
 const mouseSensitivity = 0.002;
 const touchSensitivity = 0.005;
 
@@ -278,6 +281,15 @@ async function connect(): Promise<void> {
         // so snapping to it every tick teleports the camera backwards.
         const localPlayer = state.players.get(localSessionId);
         if (localPlayer) {
+          if (localPlayer.health < lastHealth) {
+            const flash = document.getElementById("hit-flash");
+            if (flash) {
+              flash.style.opacity = "1";
+              setTimeout(() => { flash.style.opacity = "0"; }, 100);
+            }
+          }
+          lastHealth = localPlayer.health;
+
           const dx = localPlayer.x - predictedX;
           const dz = localPlayer.z - predictedZ;
           if (dx * dx + dz * dz > 4.0) { // Only snap if drifted > 2 units
@@ -299,7 +311,8 @@ async function connect(): Promise<void> {
         moveX: localMoveX * cosYaw - localMoveZ * sinYaw,
         moveZ: -localMoveX * sinYaw - localMoveZ * cosYaw,
         yaw,
-        pitch
+        pitch,
+        fire: isFiring
       };
 
       void room.send("input", input);
@@ -378,5 +391,26 @@ if (joystickZone) {
     touchMoveZ = 0;
   });
 }
+
+const fireBtn = document.getElementById("fire-btn");
+if (fireBtn) {
+  const startFire = (e: Event) => { e.preventDefault(); isFiring = true; };
+  const stopFire = (e: Event) => { e.preventDefault(); isFiring = false; };
+  fireBtn.addEventListener("mousedown", startFire);
+  fireBtn.addEventListener("mouseup", stopFire);
+  fireBtn.addEventListener("touchstart", startFire, { passive: false });
+  fireBtn.addEventListener("touchend", stopFire, { passive: false });
+}
+
+document.addEventListener("mousedown", (event) => {
+  if (event.button === 0 && document.pointerLockElement === canvas) {
+    isFiring = true;
+  }
+});
+document.addEventListener("mouseup", (event) => {
+  if (event.button === 0) {
+    isFiring = false;
+  }
+});
 
 void connect();

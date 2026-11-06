@@ -49,6 +49,48 @@
         touch-action: none;
       }
 
+      #crosshair {
+        position: fixed;
+        left: 50%;
+        top: 50%;
+        width: 4px;
+        height: 4px;
+        background: white;
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 25;
+        pointer-events: none;
+      }
+      #fire-btn {
+        position: absolute;
+        right: 20px;
+        bottom: 100px;
+        width: 80px;
+        height: 80px;
+        background: rgba(255, 255, 255, 0.2);
+        border: 2px solid rgba(255, 255, 255, 0.5);
+        border-radius: 50%;
+        z-index: 25;
+        pointer-events: auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+        user-select: none;
+      }
+      #fire-btn:active {
+        background: rgba(255, 255, 255, 0.4);
+      }
+      #hit-flash {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(255, 0, 0, 0.3);
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.1s;
+        z-index: 40;
+      }
       #status {
         position: fixed;
         left: 8px;
@@ -65,7 +107,10 @@
     </style>
   </head>
   <body>
+    <div id="hit-flash"></div>
+    <div id="crosshair"></div>
     <div id="status">Starting…</div>
+    <div id="fire-btn">FIRE</div>
     <div id="joystick-zone"></div>
     <div id="look-zone"></div>
     <canvas id="game"></canvas>

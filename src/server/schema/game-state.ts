@@ -10,6 +10,9 @@ export class Player extends Schema {
 
   @type("number") yaw = 0;
   @type("number") pitch = 0;
+
+  @type("number") health = 100;
+  @type("number") lastFireTime = 0;
 }
 
 export class GameState extends Schema {
