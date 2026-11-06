@@ -2,31 +2,38 @@
 
 ## In progress
 
-- [ ] Verify Step 1 on desktop and phone: two clients connect and cubes move.
+- [ ] Verify interpolation works on phone with simulated lag
 
 ## Next
 
-- [x] Add client-side prediction and server reconciliation.
-- [x] Add interpolation for remote players (smooth movement).
-- [ ] Add simulated lag test.
-- [x] Add touch joystick using nipplejs.
-- [x] Add desktop pointer-lock mouse look.
-- [x] Add shared input abstraction for touch and keyboard.
+- [ ] Shooting with server-side hit detection and lag compensation
+- [ ] Health, death, respawn, scoreboard
+- [ ] Rooms with join codes (2–8 players)
+- [ ] Real map, low-poly models, sound, game feel
+- [ ] Performance pass on real phone, deployment instructions
 
 ## Done
 
-- [ ] Step 1 code written: scaffold, Colyseus room, Three.js cubes, shared input message.
+- [x] Scaffold project, scripts, README - two tabs connect and see moving cubes
+- [x] Client-side prediction - instant local movement response
+- [x] Interpolation - smooth remote player movement (no teleporting)
+- [x] Touch controls - left joystick (move), right drag (look)
+- [x] Desktop controls - WASD + pointer lock mouse look
+- [x] Shared input abstraction - touch and keyboard produce same InputMessage
+- [x] Camera-relative movement - move in direction you're looking
 
 ## Known issues / bugs
 
-- [x] Local player movement uses client-side prediction (instant response).
-- [x] Touch controls (move joystick) added.
-- [x] Mobile camera controls (touch look) added.
+- [ ] No shooting yet
+- [ ] No health/death/respawn
+- [ ] No room codes - everyone joins same room
 
 ## Decisions made
 
-- Using Colyseus for networking instead of custom netcode.
-- Using Three.js for rendering.
-- Using TypeScript strict mode.
-- Step 1 uses simple cubes before adding FPS models.
-- Server is authoritative from the start.
+- Using Colyseus for networking (not custom netcode)
+- Using Three.js for rendering
+- TypeScript strict mode everywhere
+- Server tick rate: 30 Hz
+- Interpolation speed: 12.0 (smooth but responsive)
+- Reconciliation threshold: 2 units (only snap if drifted far)
+- Camera height: 1.6 units (eye level)
