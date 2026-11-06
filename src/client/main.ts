@@ -1,7 +1,7 @@
 import { Client } from "colyseus.js";
 import nipplejs from "nipplejs";
 import * as THREE from "three";
-import { SERVER_PORT } from "../shared/constants.js";
+import { SERVER_PORT, OBSTACLES } from "../shared/constants.js";
 import type { InputMessage } from "../shared/types.js";
 import { applyMovement } from "../shared/movement.js";
 
@@ -63,6 +63,25 @@ camera.lookAt(0, 0, 0);
 
 scene.add(new THREE.GridHelper(40, 40, 0x6b7280, 0x374151));
 
+// Add lighting for obstacles
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+scene.add(ambientLight);
+const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+dirLight.position.set(10, 20, 10);
+scene.add(dirLight);
+
+// Add map obstacles
+const obstacleMaterial = new THREE.MeshStandardMaterial({ color: 0x4b5563, roughness: 0.8 });
+OBSTACLES.forEach(([x, z, w, d]) => {
+  const geo = new THREE.BoxGeometry(w, 3, d);
+  const mesh = new THREE.Mesh(geo, obstacleMaterial);
+  mesh.position.set(x, 1.5, z);
+  scene.add(mesh);
+});
+
+// Ensure camera is in scene so its child light renders
+scene.add(camera);
+
 const cubeGeometry = new THREE.BoxGeometry(1, 1, 1);
 
 const localMaterial = new THREE.MeshBasicMaterial({
@@ -88,6 +107,13 @@ interface RemotePlayerData {
 const remotePlayers = new Map<string, RemotePlayerData>();
 
 let localSessionId = "";
+let audioCtx: AudioContext | null = null;
+let muzzleFlash: THREE.PointLight | null = null;
+let flashTimeout: ReturnType<typeof setTimeout> | null = null;
+
+// Attach muzzle flash light to the camera
+muzzleFlash = new THREE.PointLight(0xffaa00, 0, 10);
+camera.add(muzzleFlash);
 
 window.addEventListener("resize", () => {
   camera.aspect = window.innerWidth / window.innerHeight;
@@ -112,6 +138,55 @@ let pitch = 0;
 let isFiring = false;
 const mouseSensitivity = 0.002;
 const touchSensitivity = 0.005;
+
+
+function initAudio() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+  }
+  if (audioCtx.state === "suspended") {
+    audioCtx.resume();
+  }
+}
+
+function playShootSound() {
+  if (!audioCtx) return;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = "sawtooth";
+  osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.1);
+  gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start();
+  osc.stop(audioCtx.currentTime + 0.1);
+}
+
+function playHitSound() {
+  if (!audioCtx) return;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = "sine";
+  osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(400, audioCtx.currentTime + 0.1);
+  gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start();
+  osc.stop(audioCtx.currentTime + 0.1);
+}
+
+function triggerMuzzleFlash() {
+  if (!muzzleFlash) return;
+  muzzleFlash.intensity = 2;
+  if (flashTimeout) clearTimeout(flashTimeout);
+  flashTimeout = setTimeout(() => {
+    muzzleFlash!.intensity = 0;
+  }, 50);
+}
 
 function clampAxis(value: number): number {
   return Math.max(-1, Math.min(1, value));
@@ -416,7 +491,13 @@ if (joystickZone) {
 
 const fireBtn = document.getElementById("fire-btn");
 if (fireBtn) {
-  const startFire = (e: Event) => { e.preventDefault(); isFiring = true; };
+  const startFire = (e: Event) => { 
+    e.preventDefault(); 
+    initAudio(); 
+    isFiring = true; 
+    playShootSound(); 
+    triggerMuzzleFlash(); 
+  };
   const stopFire = (e: Event) => { e.preventDefault(); isFiring = false; };
   fireBtn.addEventListener("mousedown", startFire);
   fireBtn.addEventListener("mouseup", stopFire);
@@ -426,7 +507,10 @@ if (fireBtn) {
 
 document.addEventListener("mousedown", (event) => {
   if (event.button === 0 && document.pointerLockElement === canvas) {
+    initAudio();
     isFiring = true;
+    playShootSound();
+    triggerMuzzleFlash();
   }
 });
 document.addEventListener("mouseup", (event) => {

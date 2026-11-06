@@ -9,7 +9,7 @@
 - [x] Shooting with server-side hit detection (3 shots to kill, 150ms cooldown)
 - [x] Health, death, respawn, scoreboard (K/D tracking, death overlay)
 - [x] Rooms with join codes (2–8 players)
-- [ ] Real map, low-poly models, sound, game feel
+- [x] Game feel: map obstacles, muzzle flash, and synthesized sound effects
 - [ ] Performance pass on real phone, deployment instructions
 
 ## Done
