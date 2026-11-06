@@ -103,11 +103,11 @@ function updateMoveVector(): void {
   }
 
   if (pressedKeys.has("KeyW") || pressedKeys.has("ArrowUp")) {
-    keyboardMoveZ -= 1;
+    keyboardMoveZ += 1;
   }
 
   if (pressedKeys.has("KeyS") || pressedKeys.has("ArrowDown")) {
-    keyboardMoveZ += 1;
+    keyboardMoveZ -= 1;
   }
 }
 
@@ -146,28 +146,49 @@ document.addEventListener("mousemove", (event) => {
 // Mobile touch look
 const lookZone = document.getElementById("look-zone");
 if (lookZone) {
+  let lookTouchId: number | null = null;
   let lastTouchX = 0;
   let lastTouchY = 0;
 
   lookZone.addEventListener("touchstart", (event) => {
-    if (event.touches.length > 0) {
-      lastTouchX = event.touches[0].clientX;
-      lastTouchY = event.touches[0].clientY;
+    for (let i = 0; i < event.changedTouches.length; i++) {
+      const touch = event.changedTouches[i];
+      if (lookTouchId === null) {
+        lookTouchId = touch.identifier;
+        lastTouchX = touch.clientX;
+        lastTouchY = touch.clientY;
+        break;
+      }
     }
   });
 
   lookZone.addEventListener("touchmove", (event) => {
-    if (event.touches.length > 0) {
-      const dx = event.touches[0].clientX - lastTouchX;
-      const dy = event.touches[0].clientY - lastTouchY;
-      yaw -= dx * touchSensitivity;
-      pitch -= dy * touchSensitivity;
-      pitch = Math.max(-Math.PI / 2 + 0.01, Math.min(Math.PI / 2 - 0.01, pitch));
-      lastTouchX = event.touches[0].clientX;
-      lastTouchY = event.touches[0].clientY;
-      event.preventDefault();
+    for (let i = 0; i < event.changedTouches.length; i++) {
+      const touch = event.changedTouches[i];
+      if (touch.identifier === lookTouchId) {
+        const dx = touch.clientX - lastTouchX;
+        const dy = touch.clientY - lastTouchY;
+        yaw -= dx * touchSensitivity;
+        pitch -= dy * touchSensitivity;
+        pitch = Math.max(-Math.PI / 2 + 0.01, Math.min(Math.PI / 2 - 0.01, pitch));
+        lastTouchX = touch.clientX;
+        lastTouchY = touch.clientY;
+        event.preventDefault();
+        break;
+      }
     }
   }, { passive: false });
+
+  const clearLookTouch = (event: TouchEvent) => {
+    for (let i = 0; i < event.changedTouches.length; i++) {
+      if (event.changedTouches[i].identifier === lookTouchId) {
+        lookTouchId = null;
+        break;
+      }
+    }
+  };
+  lookZone.addEventListener("touchend", clearLookTouch);
+  lookZone.addEventListener("touchcancel", clearLookTouch);
 }
 
 function endpointFromLocation(): string {
@@ -222,9 +243,15 @@ async function connect(): Promise<void> {
     });
 
     window.setInterval(() => {
+      const localMoveX = clampAxis(keyboardMoveX + touchMoveX);
+      const localMoveZ = clampAxis(keyboardMoveZ + touchMoveZ);
+
+      const cosYaw = Math.cos(yaw);
+      const sinYaw = Math.sin(yaw);
+
       const input: InputMessage = {
-        moveX: clampAxis(keyboardMoveX + touchMoveX),
-        moveZ: clampAxis(keyboardMoveZ + touchMoveZ),
+        moveX: localMoveX * cosYaw - localMoveZ * sinYaw,
+        moveZ: -localMoveX * sinYaw - localMoveZ * cosYaw,
         yaw,
         pitch
       };
@@ -264,7 +291,7 @@ if (joystickZone) {
   joystick.on("move", (evt, data) => {
     if (data.vector) {
       touchMoveX = data.vector.x;
-      touchMoveZ = -data.vector.y;
+      touchMoveZ = data.vector.y;
     }
   });
 
