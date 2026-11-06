@@ -7,7 +7,7 @@
 ## Next
 
 - [x] Add client-side prediction and server reconciliation.
-- [ ] Add interpolation for remote players.
+- [x] Add interpolation for remote players (smooth movement).
 - [ ] Add simulated lag test.
 - [x] Add touch joystick using nipplejs.
 - [x] Add desktop pointer-lock mouse look.

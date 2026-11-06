@@ -9,6 +9,8 @@ interface PlayerView {
   x: number;
   y: number;
   z: number;
+  yaw: number;
+  pitch: number;
 }
 
 interface GameStateView {
@@ -65,7 +67,19 @@ const remoteMaterial = new THREE.MeshBasicMaterial({
   color: 0xef4444
 });
 
-const meshes = new Map<string, THREE.Mesh>();
+interface RemotePlayerData {
+  mesh: THREE.Mesh;
+  targetX: number;
+  targetZ: number;
+  currentX: number;
+  currentZ: number;
+  targetYaw: number;
+  targetPitch: number;
+  currentYaw: number;
+  currentPitch: number;
+}
+
+const remotePlayers = new Map<string, RemotePlayerData>();
 
 let localSessionId = "";
 
@@ -203,27 +217,42 @@ function endpointFromLocation(): string {
 
 function syncState(state: GameStateView): void {
   const players = state.players;
+  const seen = new Set<string>();
 
   players.forEach((player, sessionId) => {
-    let mesh = meshes.get(sessionId);
+    seen.add(sessionId);
+    let data = remotePlayers.get(sessionId);
 
-    if (!mesh) {
-      mesh = new THREE.Mesh(
+    if (!data) {
+      const mesh = new THREE.Mesh(
         cubeGeometry,
         sessionId === localSessionId ? localMaterial : remoteMaterial
       );
-
       scene.add(mesh);
-      meshes.set(sessionId, mesh);
+      data = {
+        mesh,
+        targetX: player.x,
+        targetZ: player.z,
+        currentX: player.x,
+        currentZ: player.z,
+        targetYaw: player.yaw || 0,
+        targetPitch: player.pitch || 0,
+        currentYaw: player.yaw || 0,
+        currentPitch: player.pitch || 0,
+      };
+      remotePlayers.set(sessionId, data);
+    } else {
+      data.targetX = player.x;
+      data.targetZ = player.z;
+      data.targetYaw = player.yaw || 0;
+      data.targetPitch = player.pitch || 0;
     }
-
-    mesh.position.set(player.x, 0.5, player.z);
   });
 
-  for (const [sessionId, mesh] of meshes) {
-    if (!players.has(sessionId)) {
-      scene.remove(mesh);
-      meshes.delete(sessionId);
+  for (const [sessionId, data] of remotePlayers) {
+    if (!seen.has(sessionId)) {
+      scene.remove(data.mesh);
+      remotePlayers.delete(sessionId);
     }
   }
 }
@@ -298,16 +327,31 @@ renderer.setAnimationLoop(() => {
   predictedX = next.x;
   predictedZ = next.z;
 
-  const localMesh = meshes.get(localSessionId);
-
-  if (localMesh) {
-    localMesh.visible = false;
-    // Use predicted position for camera!
+  const localData = remotePlayers.get(localSessionId);
+  if (localData) {
+    localData.mesh.visible = false;
     camera.position.set(predictedX, 1.6, predictedZ);
     camera.rotation.order = "YXZ";
     camera.rotation.y = yaw;
     camera.rotation.x = pitch;
   }
+
+  // Interpolate remote players
+  const interpSpeed = 12.0;
+  remotePlayers.forEach((data, sessionId) => {
+    if (sessionId === localSessionId) return;
+
+    data.currentX += (data.targetX - data.currentX) * interpSpeed * dt;
+    data.currentZ += (data.targetZ - data.currentZ) * interpSpeed * dt;
+    data.currentYaw += (data.targetYaw - data.currentYaw) * interpSpeed * dt;
+    data.currentPitch += (data.targetPitch - data.currentPitch) * interpSpeed * dt;
+
+    data.mesh.position.set(data.currentX, 0.5, data.currentZ);
+    data.mesh.rotation.order = "YXZ";
+    data.mesh.rotation.y = data.currentYaw;
+    data.mesh.rotation.x = data.currentPitch;
+    data.mesh.visible = true;
+  });
 
   renderer.render(scene, camera);
 });
